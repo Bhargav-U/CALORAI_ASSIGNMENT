@@ -413,3 +413,5 @@ an API gateway — appropriate for the current scale, no additional infrastructu
 | Statsig configuration | ~20 min |
 | Safety features | ~45 min |
 | README & Evaluation Plan | ~45 min |
+| WEB DASHBOARD CODING| ~40 min |
+| WEB DASHBOARD CLOUDFLARE HOSTING | ~5 min |
