@@ -1,0 +1,551 @@
+{
+  "name": "CALOR_AI_TASK_1",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://<YOUR_SUPABASE_PROJECT_URL>/rest/v1/events",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "<YOUR_SUPABASE_API_KEY>"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer <YOUR_SUPABASE_API_KEY>"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"telegram_user_id\": \"{{ $('Set New User').item.json.telegram_user_id }}\",\n  \"event_name\": \"group_assigned\",\n  \"experiment_group\": \"{{ $('STATSSIG EXPERIMENT').item.json.value.group_name || 'unknown' }}\",\n  \"metadata\": {}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -224,
+        32
+      ],
+      "id": "fb4ee244-80f4-4f6f-a509-cb745269c28f",
+      "name": "ADD LOGS",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "I help you log meals and track your day in a simple way.  You can send meals in plain English, for example: Ate 2 eggs and toast  Send your first meal now to get started.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        -16
+      ],
+      "id": "892c9d8b-ba0b-46ba-8994-9b1f6a9480fc",
+      "name": "TEST MESSAGE",
+      "webhookId": "<YOUR_TELEGRAM_WEBHOOK_ID>",
+      "credentials": {
+        "telegramApi": {
+          "id": "<YOUR_TELEGRAM_CREDENTIAL_ID>",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "You can log meals and track your day.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        -208
+      ],
+      "id": "2e286e16-6a80-4a33-9036-a4effc1080ad",
+      "name": "CONTROL MESSAGE",
+      "webhookId": "<YOUR_TELEGRAM_WEBHOOK_ID>",
+      "notesInFlow": false,
+      "credentials": {
+        "telegramApi": {
+          "id": "<YOUR_TELEGRAM_CREDENTIAL_ID>",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.statsig.com/v1/get_config",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json "
+            },
+            {
+              "name": "statsig-api-key",
+              "value": "<YOUR_STATSIG_SERVER_SECRET_KEY>"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"configName\": \"telegram_onboarding_experiment\",\n  \"user\": {\n    \"userID\":\"{{ $json.telegram_user_id }}\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -672,
+        32
+      ],
+      "id": "1d64cff8-b73c-4f8a-b7ca-69961cc04d37",
+      "name": "STATSSIG EXPERIMENT"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "027b6163-c812-4666-a568-c291c0102f8a",
+              "leftValue": "={{ $json.experiment_group }}",
+              "rightValue": "control",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": "={{ false }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        0,
+        -112
+      ],
+      "id": "6ae4670d-7fe1-49eb-b816-10e972c11c72",
+      "name": "IF Group"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://<YOUR_SUPABASE_PROJECT_URL>/rest/v1/users",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "<YOUR_SUPABASE_API_KEY>"
+            },
+            {
+              "name": "Accept",
+              "value": " application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer <YOUR_SUPABASE_API_KEY>"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"telegram_user_id\": \"{{ $('Set New User').item.json.telegram_user_id }}\",\n  \"chat_id\": \"{{ $('Set New User').item.json.chat_id }}\",\n  \"experiment_group\": \"{{ $json.value.group_name }}\",\n  \"onboarding_step\": {{ $('Set New User').item.json.onboarding_step }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -448,
+        32
+      ],
+      "id": "6fce80cc-a9cc-401a-aec5-1e59825fc674",
+      "name": "INSERT TO DB",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cf0e340d-4452-491d-afbf-e433c8ebe584",
+              "name": "telegram_user_id",
+              "value": "={{$json[\"telegram_user_id\"]}}",
+              "type": "string"
+            },
+            {
+              "id": "a1a740a7-bfaf-4e13-bc11-d5ae51a86583",
+              "name": "chat_id",
+              "value": "={{ $json.chat_id }}",
+              "type": "number"
+            },
+            {
+              "id": "b2d362ea-c108-4287-a6cf-c861998f51a9",
+              "name": "onboarding_step",
+              "value": "={{$json[\"onboarding_step\"]}}",
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -224,
+        -256
+      ],
+      "id": "56e0d4de-8750-4720-aaf9-2dc9595363ff",
+      "name": "Set Existing User"
+    },
+    {
+      "parameters": {
+        "url": "=https://<YOUR_SUPABASE_PROJECT_URL>/rest/v1/users?telegram_user_id=eq.{{$json[\"message\"][\"from\"][\"id\"]}}&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "<YOUR_SUPABASE_API_KEY>"
+            },
+            {
+              "name": "Accept",
+              "value": " application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer <YOUR_SUPABASE_API_KEY>"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1344,
+        -112
+      ],
+      "id": "0e5b9223-96aa-4a8a-b286-18c1eb403355",
+      "name": "CHECK DB FOR USER INFO",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "027b6163-c812-4666-a568-c291c0102f8a",
+              "leftValue": "={{ $json.telegram_user_id }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1120,
+        -112
+      ],
+      "id": "d9e0fd4a-74a9-4c1f-8b44-df36520344b3",
+      "name": "CHECK IF USER EXISTS"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cf0e340d-4452-491d-afbf-e433c8ebe584",
+              "name": "telegram_user_id",
+              "value": "={{$node[\"Telegram Trigger\"].json[\"message\"][\"from\"][\"id\"]}}",
+              "type": "string"
+            },
+            {
+              "id": "a1a740a7-bfaf-4e13-bc11-d5ae51a86583",
+              "name": "chat_id",
+              "value": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+              "type": "number"
+            },
+            {
+              "id": "b2d362ea-c108-4287-a6cf-c861998f51a9",
+              "name": "onboarding_step",
+              "value": 0,
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -896,
+        32
+      ],
+      "id": "ed1b5e00-0342-486e-9676-2c79571de4b2",
+      "name": "Set New User"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1568,
+        -112
+      ],
+      "id": "70fbcc73-fd76-46e2-b61c-a4dc6e675c9e",
+      "name": "Telegram Trigger",
+      "webhookId": "<YOUR_TELEGRAM_WEBHOOK_ID>",
+      "credentials": {
+        "telegramApi": {
+          "id": "<YOUR_TELEGRAM_CREDENTIAL_ID>",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "HI ,welcome back.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        -304
+      ],
+      "id": "c3a83365-f50f-4a4a-9120-e7f62197287c",
+      "name": "GREET USER",
+      "webhookId": "<YOUR_TELEGRAM_WEBHOOK_ID>",
+      "notesInFlow": false,
+      "credentials": {
+        "telegramApi": {
+          "id": "<YOUR_TELEGRAM_CREDENTIAL_ID>",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "WELCOME TO  CALORAI.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        80
+      ],
+      "id": "299d2c84-5054-40b6-aaa5-b4d8b939feeb",
+      "name": "WELCOME USER",
+      "webhookId": "<YOUR_TELEGRAM_WEBHOOK_ID>",
+      "notesInFlow": false,
+      "credentials": {
+        "telegramApi": {
+          "id": "<YOUR_TELEGRAM_CREDENTIAL_ID>",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "ADD LOGS": {
+      "main": [
+        [
+          {
+            "node": "IF Group",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "WELCOME USER",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STATSSIG EXPERIMENT": {
+      "main": [
+        [
+          {
+            "node": "INSERT TO DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Group": {
+      "main": [
+        [
+          {
+            "node": "CONTROL MESSAGE",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TEST MESSAGE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "INSERT TO DB": {
+      "main": [
+        [
+          {
+            "node": "ADD LOGS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Existing User": {
+      "main": [
+        [
+          {
+            "node": "IF Group",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GREET USER",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CHECK DB FOR USER INFO": {
+      "main": [
+        [
+          {
+            "node": "CHECK IF USER EXISTS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CHECK IF USER EXISTS": {
+      "main": [
+        [
+          {
+            "node": "Set Existing User",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set New User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set New User": {
+      "main": [
+        [
+          {
+            "node": "STATSSIG EXPERIMENT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "CHECK DB FOR USER INFO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CONTROL MESSAGE": {
+      "main": [
+        []
+      ]
+    },
+    "TEST MESSAGE": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "021ef977-947a-48f3-8a72-51dca678a0c8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "<YOUR_N8N_INSTANCE_ID>"
+  },
+  "id": "jnXaGyXe9sNTReoO",
+  "tags": []
+}
