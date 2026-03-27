@@ -18,7 +18,7 @@ logging experience — all without a traditional backend server.
 ---
 
 ## 📁 Repository Structure
-
+```
 CALORAI_assignment/
 ├── DASHBOARD/
 │   ├── src/
@@ -40,13 +40,16 @@ CALORAI_assignment/
 │   │   ├── CALORAI_HEALTH_BOT.json     # n8n workflow — AI meal logging bot
 │   │   └── Flowchart.png               # Health bot workflow diagram
 │   ├── TASK1/
-│   │   ├── CALOR_AI_TASK_1.json        # n8n workflow — A/B experiment
-│   │   ├── Flowchart.png               # A/B experiment workflow diagram
-│   │   └── TASK_1_EVALUATION_PLAN.md   # Full evaluation framework
-│   └── WORKFLOW_SETUP_GUIDE.pdf        # Step-by-step setup guide (all services)
+│       ├── CALOR_AI_TASK_1.json        # n8n workflow — A/B experiment
+│       ├── Flowchart.png               # A/B experiment workflow diagram
+│       └── TASK_1_EVALUATION_PLAN.md   # Full evaluation framework
+│  
 └── SUPABASE_DB.png                     # Supabase schema screenshot
+|
+└── WORKFLOW_SETUP_GUIDE.pdf        # Step-by-step setup guide (all services) for n8n and dashbaord
 ---
 
+```
 ## 🏗️ Architecture Overview
 
 ```
