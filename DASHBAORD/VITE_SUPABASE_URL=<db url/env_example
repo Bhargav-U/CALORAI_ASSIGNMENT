@@ -1,0 +1,2 @@
+VITE_SUPABASE_URL=<db url/data api url>
+VITE_SUPABASE_ANON_KEY=<supabase secret>
