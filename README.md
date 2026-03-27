@@ -7,7 +7,7 @@ logging experience — all without a traditional backend server.
 ---
 
 > 📖 For detailed step-by-step setup instructions for every service, refer to:
-> **`N8N/WORKFLOW_SETUP_GUIDE.pdf`**
+> **`WORKFLOW_SETUP_GUIDE.pdf`**
 
 ## 📌 Project Links
 
@@ -304,7 +304,7 @@ GOOGLE_GEMINI_API_KEY=<your-gemini-api-key>
 ## 🚀 Setup Instructions
 
 > 📖 **Full step-by-step setup with screenshots for every service is in:
-> `N8N/WORKFLOW_SETUP_GUIDE.pdf`**
+> `WORKFLOW_SETUP_GUIDE.pdf`**
 >
 > The steps below are a quick-reference summary.
 
