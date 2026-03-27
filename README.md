@@ -13,6 +13,7 @@ logging experience — all without a traditional backend server.
 
 - 🎥 **YouTube Submission:** https://youtube.com/watch?v=fXQfEU5Tpoc  
 - 📄 **Setup Guide (PDF):** https://canva.com/design/DAHFGipITBI/zMlAltd5DIpdmNN9uYHjeA/edit?utm_content=DAHFGipITBI&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton
+- 🖥️ **Live Dashboard:** https://calorai-dash.pages.dev/
 
 ---
 
