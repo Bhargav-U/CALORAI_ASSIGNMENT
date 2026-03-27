@@ -19,8 +19,22 @@ logging experience — all without a traditional backend server.
 
 ## 📁 Repository Structure
 
-```
 CALORAI_assignment/
+├── DASHBOARD/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── MealCalendar.tsx        # Calendar view with meal day highlighting
+│   │   │   ├── MealLog.tsx             # Meal list with edit/delete actions
+│   │   │   ├── UserDetail.tsx          # Right panel — user info + calendar + meals
+│   │   │   └── UserList.tsx            # Left sidebar — user list
+│   │   ├── data/
+│   │   │   └── mockData.ts             # Supabase data layer (fetch, add, edit, delete)
+│   │   ├── lib/
+│   │   │   └── supabaseClient.ts       # Supabase client initialisation
+│   │   └── pages/
+│   │       └── Index.tsx               # Main page
+│   ├── .env                            # Environment variables (not committed)
+│   └── vite.config.ts                  # Vite config
 ├── N8N/
 │   ├── HEALTH_BOT/
 │   │   ├── CALORAI_HEALTH_BOT.json     # n8n workflow — AI meal logging bot
@@ -31,8 +45,6 @@ CALORAI_assignment/
 │   │   └── TASK_1_EVALUATION_PLAN.md   # Full evaluation framework
 │   └── WORKFLOW_SETUP_GUIDE.pdf        # Step-by-step setup guide (all services)
 └── SUPABASE_DB.png                     # Supabase schema screenshot
-```
-
 ---
 
 ## 🏗️ Architecture Overview
