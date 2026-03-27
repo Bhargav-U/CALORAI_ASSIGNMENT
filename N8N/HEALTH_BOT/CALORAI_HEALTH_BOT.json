@@ -1,0 +1,743 @@
+{
+  "name": "CALORAI_HEALTH_BOT",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1392,
+        208
+      ],
+      "id": "33598879-b96d-42ce-9f7c-ad1145dc8870",
+      "name": "Telegram Trigger",
+      "webhookId": "<YOUR_TELEGRAM_WEBHOOK_ID>",
+      "credentials": {
+        "telegramApi": {
+          "id": "<YOUR_TELEGRAM_CREDENTIAL_ID>",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        432
+      ],
+      "id": "680be0a7-b84e-4827-b602-579c037cea5b",
+      "name": "Google Gemini Chat Model",
+      "retryOnFail": true,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "<YOUR_GOOGLE_GEMINI_CREDENTIAL_ID>",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=````text\nYou are a strict intent parser for a Telegram health bot.\n\nYour job is to read the user's latest message and return exactly one raw JSON object for backend automation.\n\nHard output rules:\n- Return exactly one raw JSON object and nothing else.\n- Do not use markdown.\n- Do not use code fences.\n- Do not write ```json.\n- Do not add labels, explanations, notes, or surrounding text.\n- Your entire response must start with { and end with }.\n- If you output anything other than a single raw JSON object, that is incorrect.\n\nThe bot supports only these actions:\n- log_meal\n- track_day\n- edit_meal\n- delete_meal\n- confirm\n- unknown\n\nYou must ALWAYS return exactly this JSON shape:\n\n{\n  \"action\": null,\n  \"meal_text\": null,\n  \"meal_time_label\": null,\n  \"target_reference\": null,\n  \"updated_meal_text\": null,\n  \"time_scope\": null,\n  \"date_text\": null,\n  \"confirm_text\": null,\n  \"log_time\": null,\n  \"error\": null\n}\n\nField meanings:\n- action: one of log_meal, track_day, edit_meal, delete_meal, confirm, unknown\n- meal_text: cleaned meal text for log_meal only\n- meal_time_label: one of breakfast, lunch, dinner, snack, or null\n- target_reference: meal reference for edit/delete, such as breakfast, lunch, pizza entry, last meal\n- updated_meal_text: new meal text for edit_meal only\n- time_scope: one of today, yesterday, this_week, specific_date, recent, or null\n- date_text: raw date phrase from user like today, yesterday, this week, 2026-03-25, march 25, or null\n- confirm_text: user's confirmation phrase only for confirm action\n- log_time: extracted meal time in 24-hour HH:MM format for log_meal only, or null\n- error: short user-facing clarification message only when action is unknown\n\nRules:\n\n1. If the user clearly wants to log a meal, return:\n{\n  \"action\": \"log_meal\",\n  \"meal_text\": \"<cleaned meal text>\",\n  \"meal_time_label\": \"<breakfast|lunch|dinner|snack|null>\",\n  \"target_reference\": null,\n  \"updated_meal_text\": null,\n  \"time_scope\": null,\n  \"date_text\": null,\n  \"confirm_text\": null,\n  \"log_time\": \"<HH:MM or null>\",\n  \"error\": null\n}\n\n2. If the user clearly wants to view meals, day summary, or food history, return:\n{\n  \"action\": \"track_day\",\n  \"meal_text\": null,\n  \"meal_time_label\": null,\n  \"target_reference\": null,\n  \"updated_meal_text\": null,\n  \"time_scope\": \"<today|yesterday|this_week|specific_date|recent>\",\n  \"date_text\": \"<raw date phrase if any, otherwise null>\",\n  \"confirm_text\": null,\n  \"log_time\": null,\n  \"error\": null\n}\n\n3. If the user clearly wants to edit an already logged meal, return:\n{\n  \"action\": \"edit_meal\",\n  \"meal_text\": null,\n  \"meal_time_label\": null,\n  \"target_reference\": \"<the meal they want to edit>\",\n  \"updated_meal_text\": \"<new meal text>\",\n  \"time_scope\": null,\n  \"date_text\": null,\n  \"confirm_text\": null,\n  \"log_time\": null,\n  \"error\": null\n}\n\n4. If the user clearly wants to delete a logged meal, return:\n{\n  \"action\": \"delete_meal\",\n  \"meal_text\": null,\n  \"meal_time_label\": null,\n  \"target_reference\": \"<the meal they want to delete>\",\n  \"updated_meal_text\": null,\n  \"time_scope\": null,\n  \"date_text\": null,\n  \"confirm_text\": null,\n  \"log_time\": null,\n  \"error\": null\n}\n\n5. If the user gives confirmation like:\n- I am sure\n- yes I confirm\n- confirm\n- yes delete it\n- yes do it\nthen return:\n{\n  \"action\": \"confirm\",\n  \"meal_text\": null,\n  \"meal_time_label\": null,\n  \"target_reference\": null,\n  \"updated_meal_text\": null,\n  \"time_scope\": null,\n  \"date_text\": null,\n  \"confirm_text\": \"<the user's confirmation phrase>\",\n  \"log_time\": null,\n  \"error\": null\n}\n\n6. If the message is ambiguous, incomplete, unrelated, unsafe to act on, or missing required details, return:\n{\n  \"action\": \"unknown\",\n  \"meal_text\": null,\n  \"meal_time_label\": null,\n  \"target_reference\": null,\n  \"updated_meal_text\": null,\n  \"time_scope\": null,\n  \"date_text\": null,\n  \"confirm_text\": null,\n  \"log_time\": null,\n  \"error\": \"<short user-facing clarification message>\"\n}\n\nImportant safety and ambiguity rules:\n- Never guess missing edit details.\n- Never guess missing delete details.\n- Never invent food items not present in the user's message.\n- If the message is casual conversation unrelated to the bot, return unknown.\n- If the message does not clearly look like food or meal logging, do not force log_meal.\n- For edit_meal, both target_reference and updated_meal_text must be clear. Otherwise return unknown.\n- For delete_meal, target_reference must be clear. Otherwise return unknown.\n\nMeal time label extraction rules:\n- Allowed meal_time_label values: breakfast, lunch, dinner, snack, null\n- If missing, set meal_time_label to null\n- Infer snack from phrases like morning snack, afternoon snack, evening snack\n- Do not include time-of-day phrases inside meal_text unless they are part of the actual food description\n\nMeal clock-time extraction rules for log_time:\n- Extract a time only if the user explicitly mentions one\n- Convert extracted time to 24-hour HH:MM format\n- Examples:\n  - 12pm -> 12:00\n  - 12 am -> 00:00\n  - 2:30 pm -> 14:30\n  - 7 in the morning -> 07:00\n  - 8 tonight -> 20:00 if clearly indicated\n- If no explicit clock time is mentioned, log_time = null\n- log_time is only for the meal event time, not for track_day queries\n- Do not place the clock time inside meal_text\n\nTrack_day time rules:\n- \"show my day\", \"my day\", \"what did I eat today\", \"today's meals\" -> time_scope = \"today\", date_text = \"today\"\n- \"yesterday\", \"what did I eat yesterday\" -> time_scope = \"yesterday\", date_text = \"yesterday\"\n- \"this week\", \"what did I eat this week\" -> time_scope = \"this_week\", date_text = \"this week\"\n- Specific date phrases like \"on 2026-03-25\", \"on march 25\", \"march 25 meals\" -> time_scope = \"specific_date\", date_text = the raw date phrase\n- Vague requests like \"recent meals\", \"my recent food logs\" -> time_scope = \"recent\", date_text = null\n\nCleaning rules:\n- Keep meal_text concise and normalized\n- Remove filler words like \"I ate\", \"log\", \"had\", \"please add\", \"for\", \"ate\"\n- Preserve the actual food text\n- Correct obvious spelling mistakes only if the intended food is very clear\n- Remove standalone articles when unnecessary, such as turning \"a banana\" into \"banana\"\n- Do not include words like today, yesterday, lunch, breakfast, dinner, snack, or explicit clock times inside meal_text unless they are actually part of the food description\n\nExamples:\n\nInput: I ate 2 eggs and toast\nOutput:\n{\"action\":\"log_meal\",\"meal_text\":\"2 eggs and toast\",\"meal_time_label\":null,\"target_reference\":null,\"updated_meal_text\":null,\"time_scope\":null,\"date_text\":null,\"confirm_text\":null,\"log_time\":null,\"error\":null}\n\nInput: Log lunch: rice, dal, curd\nOutput:\n{\"action\":\"log_meal\",\"meal_text\":\"rice, dal, curd\",\"meal_time_label\":\"lunch\",\"target_reference\":null,\"updated_meal_text\":null,\"time_scope\":null,\"date_text\":null,\"confirm_text\":null,\"log_time\":null,\"error\":null}\n\nInput: i ate watermelon for afternoon snack\nOutput:\n{\"action\":\"log_meal\",\"meal_text\":\"watermelon\",\"meal_time_label\":\"snack\",\"target_reference\":null,\"updated_meal_text\":null,\"time_scope\":null,\"date_text\":null,\"confirm_text\":null,\"log_time\":null,\"error\":null}\n\nInput: ate a banana today for lunch at 12pm\nOutput:\n{\"action\":\"log_meal\",\"meal_text\":\"banana\",\"meal_time_label\":\"lunch\",\"target_reference\":null,\"updated_meal_text\":null,\"time_scope\":null,\"date_text\":\"today\",\"confirm_text\":null,\"log_time\":\"12:00\",\"error\":null}\n\nInput: show my day\nOutput:\n{\"action\":\"track_day\",\"meal_text\":null,\"meal_time_label\":null,\"target_reference\":null,\"updated_meal_text\":null,\"time_scope\":\"today\",\"date_text\":\"today\",\"confirm_text\":null,\"log_time\":null,\"error\":null}\n\nInput: what did i eat yesterday\nOutput:\n{\"action\":\"track_day\",\"meal_text\":null,\"meal_time_label\":null,\"target_reference\":null,\"updated_meal_text\":null,\"time_scope\":\"yesterday\",\"date_text\":\"yesterday\",\"confirm_text\":null,\"log_time\":null,\"error\":null}\n\nInput: what did i eat on 2026-03-25\nOutput:\n{\"action\":\"track_day\",\"meal_text\":null,\"meal_time_label\":null,\"target_reference\":null,\"updated_meal_text\":null,\"time_scope\":\"specific_date\",\"date_text\":\"2026-03-25\",\"confirm_text\":null,\"log_time\":null,\"error\":null}\n\nInput: edit breakfast to 3 idlis and chutney\nOutput:\n{\"action\":\"edit_meal\",\"meal_text\":null,\"meal_time_label\":null,\"target_reference\":\"breakfast\",\"updated_meal_text\":\"3 idlis and chutney\",\"time_scope\":null,\"date_text\":null,\"confirm_text\":null,\"log_time\":null,\"error\":null}\n\nInput: delete the pizza entry\nOutput:\n{\"action\":\"delete_meal\",\"meal_text\":null,\"meal_time_label\":null,\"target_reference\":\"pizza entry\",\"updated_meal_text\":null,\"time_scope\":null,\"date_text\":null,\"confirm_text\":null,\"log_time\":null,\"error\":null}\n\nInput: delete it\nOutput:\n{\"action\":\"unknown\",\"meal_text\":null,\"meal_time_label\":null,\"target_reference\":null,\"updated_meal_text\":null,\"time_scope\":null,\"date_text\":null,\"confirm_text\":null,\"log_time\":null,\"error\":\"Please tell me which meal you want to delete.\"}\n\nInput: change it\nOutput:\n{\"action\":\"unknown\",\"meal_text\":null,\"meal_time_label\":null,\"target_reference\":null,\"updated_meal_text\":null,\"time_scope\":null,\"date_text\":null,\"confirm_text\":null,\"log_time\":null,\"error\":\"Please tell me which meal to edit and what it should be changed to.\"}\n\nInput: I am sure\nOutput:\n{\"action\":\"confirm\",\"meal_text\":null,\"meal_time_label\":null,\"target_reference\":null,\"updated_meal_text\":null,\"time_scope\":null,\"date_text\":null,\"confirm_text\":\"I am sure\",\"log_time\":null,\"error\":null}\n\nInput: hello\nOutput:\n{\"action\":\"unknown\",\"meal_text\":null,\"meal_time_label\":null,\"target_reference\":null,\"updated_meal_text\":null,\"time_scope\":null,\"date_text\":null,\"confirm_text\":null,\"log_time\":null,\"error\":\"Please tell me a meal to log or ask to view your meals.\"}\n\nFinal reminder:\nOutput must be a single raw JSON object only.\n\nUser input:\n{{ $('Telegram Trigger').item.json.message.text }}\n````\n",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -496,
+        208
+      ],
+      "id": "0c0f13fd-9af4-4c60-aa31-b8c1338ecef2",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ $json.text }} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -144,
+        208
+      ],
+      "id": "ae9f1719-9e12-4b6e-82c7-f8c6c2e4ca64",
+      "name": "PARSE LLM OUTPUT"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://<YOUR_SUPABASE_PROJECT_URL>/rest/v1/healthbot_users",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "<YOUR_SUPABASE_API_KEY>"
+            },
+            {
+              "name": "Accept",
+              "value": " application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer <YOUR_SUPABASE_API_KEY>"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"telegram_user_id\":{{ $('Telegram Trigger').item.json.message.from.id }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -720,
+        288
+      ],
+      "id": "5107de6b-ca0f-41ce-a1b1-6c7bff94f8f6",
+      "name": "INSERT TO DB",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "027b6163-c812-4666-a568-c291c0102f8a",
+              "leftValue": "={{ $json.telegram_user_id }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -944,
+        208
+      ],
+      "id": "f59f7e01-c6c6-487f-aec5-c4b22721a409",
+      "name": "CHECK IF USER EXISTS"
+    },
+    {
+      "parameters": {
+        "url": "=https://<YOUR_SUPABASE_PROJECT_URL>/rest/v1/healthbot_users?telegram_user_id=eq.{{ $json.message.from.id }}&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "<YOUR_SUPABASE_API_KEY>"
+            },
+            {
+              "name": "Accept",
+              "value": " application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer <YOUR_SUPABASE_API_KEY>"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1168,
+        208
+      ],
+      "id": "2ee727cb-cd49-4a06-8107-94170850e652",
+      "name": "CHECK DB FOR USER INFO1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "log_meal",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "b4092141-7da1-4e92-87c6-4ab6b418b95a"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "853a3584-c84b-4e67-a07d-4f7838973153",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "track_day",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "21fc9aeb-ddfc-4b0b-b41d-b6e1d6a64cd4",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "edit_meal",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "8f99412b-7324-4892-a2fb-ed6b0760786b",
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "delete_meal",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        80,
+        176
+      ],
+      "id": "3412f81f-5489-4148-871a-306e959b3241",
+      "name": "CHECK LOGGING METHOD"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://<YOUR_SUPABASE_PROJECT_URL>/rest/v1/healthbot_meals",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "<YOUR_SUPABASE_API_KEY>"
+            },
+            {
+              "name": "Accept",
+              "value": " application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer <YOUR_SUPABASE_API_KEY>"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"telegram_user_id\": {{ $('Telegram Trigger').item.json.message.from.id }},\n  \"meal_text\": \"{{$json.meal_text}}\",\n  \"meal_time_label\": \"{{$json.meal_time_label}}\",\n  \"logged_at\": \"{{$json.date_text === 'today' && $json.log_time ? new Date().toISOString().split('T')[0] + 'T' + $json.log_time + ':00+05:30' : new Date().toISOString() }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        304,
+        -80
+      ],
+      "id": "4f055040-885e-4c87-a664-9a6d5072140f",
+      "name": "ADD MEAL",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "=https://<YOUR_SUPABASE_PROJECT_URL>/rest/v1/healthbot_meals?telegram_user_id=eq.{{ $('Telegram Trigger').item.json.message.from.id }}&logged_at=gte.{{ new Date().toISOString().split('T')[0] }}T00:00:00%2B05:30&logged_at=lt.{{ new Date().toISOString().split('T')[0] }}T23:59:59%2B05:30&order=logged_at.asc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "<YOUR_SUPABASE_API_KEY>"
+            },
+            {
+              "name": "Accept",
+              "value": " application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer <YOUR_SUPABASE_API_KEY>"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        304,
+        112
+      ],
+      "id": "2b2b84bb-7c58-40ad-904a-b30bb9d4a85c",
+      "name": "TRACK DAY",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "=Meal logged: {{ $('PARSE LLM OUTPUT').item.json.meal_text }} ({{ $('PARSE LLM OUTPUT').item.json.meal_time_label || \"unspecified\" }})",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        528,
+        -80
+      ],
+      "id": "6f18fcf5-1d75-40bd-bfc7-ede513d15425",
+      "name": "AKNOWLEDGE ENTRY",
+      "webhookId": "<YOUR_TELEGRAM_WEBHOOK_ID>",
+      "credentials": {
+        "telegramApi": {
+          "id": "<YOUR_TELEGRAM_CREDENTIAL_ID>",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://<YOUR_SUPABASE_PROJECT_URL>/rest/v1/healthbot_meals?telegram_user_id=eq.{{ $('Telegram Trigger').item.json.message.from.id }}&meal_time_label=eq.{{ $('PARSE LLM OUTPUT').item.json.target_reference }}   ",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "<YOUR_SUPABASE_API_KEY>"
+            },
+            {
+              "name": "Accept",
+              "value": " application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer <YOUR_SUPABASE_API_KEY>"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"meal_text\": \"{{$json.updated_meal_text}}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        304,
+        304
+      ],
+      "id": "1a258739-24d3-40a6-bd59-c5f62b9d9947",
+      "name": "EDIT MEAL",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://<YOUR_SUPABASE_PROJECT_URL>/rest/v1/healthbot_meals?telegram_user_id=eq.{{ $('Telegram Trigger').item.json.message.from.id }}&meal_time_label=eq.{{$json.delete_meal_type}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "<YOUR_SUPABASE_API_KEY>"
+            },
+            {
+              "name": "Accept",
+              "value": " application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer <YOUR_SUPABASE_API_KEY>"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        528,
+        496
+      ],
+      "id": "7bdcedb3-38f5-4488-a5b0-fa0b7f5f42c9",
+      "name": "DELETE MEAL",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        752,
+        112
+      ],
+      "id": "094d0587-ee7d-4ca0-a1d0-7c3c6841ddd9",
+      "name": "SHOW USER'S DAY",
+      "webhookId": "<YOUR_TELEGRAM_WEBHOOK_ID>",
+      "credentials": {
+        "telegramApi": {
+          "id": "<YOUR_TELEGRAM_CREDENTIAL_ID>",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "=Meal updated: {{ $('PARSE LLM OUTPUT').item.json.target_reference }}  \u2192 {{ $('PARSE LLM OUTPUT').item.json.updated_meal_text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        528,
+        304
+      ],
+      "id": "e83d2fdf-88e5-41ae-ac51-8ed2c8fe271c",
+      "name": "SHOW EDITS",
+      "webhookId": "<YOUR_TELEGRAM_WEBHOOK_ID>",
+      "credentials": {
+        "telegramApi": {
+          "id": "<YOUR_TELEGRAM_CREDENTIAL_ID>",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = ($json.target_reference || '').toLowerCase().trim();\n\nlet meal_type = null;\n\nif (raw.match(/\\bbreakfast\\b/)) meal_type = 'breakfast';\nelse if (raw.match(/\\blunch\\b/)) meal_type = 'lunch';\nelse if (raw.match(/\\bdinner\\b/)) meal_type = 'dinner';\nelse if (raw.match(/\\bsnack\\b|\\bsnacks\\b/)) meal_type = 'snack';\n\nreturn [\n  {\n    json: {\n      ...$json,\n      delete_meal_type: meal_type\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        496
+      ],
+      "id": "9dc15d0a-6b39-4eb2-a3bf-520446331f03",
+      "name": "APPLY MEAL REGEX"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "=Meal deleated",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        752,
+        496
+      ],
+      "id": "be76d57a-d136-4b3e-a8a7-a99f90756389",
+      "name": "DELETETION ACKNOLEDGEMENT",
+      "webhookId": "<YOUR_TELEGRAM_WEBHOOK_ID>",
+      "credentials": {
+        "telegramApi": {
+          "id": "<YOUR_TELEGRAM_CREDENTIAL_ID>",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const meals = items.map(i => i.json);\n\n// sort\nmeals.sort((a, b) => new Date(a.logged_at) - new Date(b.logged_at));\n\n// group\nconst groups = {\n  breakfast: [],\n  lunch: [],\n  dinner: [],\n  snack: [],\n  other: []\n};\n\nfor (const m of meals) {\n  const label = m.meal_time_label || \"other\";\n\n  const time = new Date(m.logged_at).toLocaleTimeString('en-IN', {\n    timeZone: 'Asia/Kolkata',\n    hour: '2-digit',\n    minute: '2-digit',\n    hour12: true\n  });\n\n  const line = `\u2022 ${time} \u2014 ${m.meal_text}`;\n\n  if (groups[label]) {\n    groups[label].push(line);\n  } else {\n    groups.other.push(line);\n  }\n}\n\n// build output\nlet text = \"Today's Meals:\\n\";\n\nfor (const key of [\"breakfast\", \"lunch\", \"dinner\", \"snack\", \"other\"]) {\n  if (groups[key].length > 0) {\n    const title = key.charAt(0).toUpperCase() + key.slice(1);\n    text += `\\n${title}:\\n${groups[key].join('\\n')}\\n`;\n  }\n}\n\nif (meals.length === 0) {\n  text = \"No meals logged today.\";\n}\n\nreturn [{ json: { text } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        112
+      ],
+      "id": "c6d08312-e6d5-4f65-8bd2-4e4908981148",
+      "name": "APPLY MEAL ORGANISE REGEX"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "CHECK DB FOR USER INFO1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "PARSE LLM OUTPUT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PARSE LLM OUTPUT": {
+      "main": [
+        [
+          {
+            "node": "CHECK LOGGING METHOD",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "INSERT TO DB": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CHECK DB FOR USER INFO1": {
+      "main": [
+        [
+          {
+            "node": "CHECK IF USER EXISTS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CHECK IF USER EXISTS": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "INSERT TO DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CHECK LOGGING METHOD": {
+      "main": [
+        [
+          {
+            "node": "ADD MEAL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TRACK DAY",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "EDIT MEAL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "APPLY MEAL REGEX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ADD MEAL": {
+      "main": [
+        [
+          {
+            "node": "AKNOWLEDGE ENTRY",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TRACK DAY": {
+      "main": [
+        [
+          {
+            "node": "APPLY MEAL ORGANISE REGEX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "EDIT MEAL": {
+      "main": [
+        [
+          {
+            "node": "SHOW EDITS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DELETE MEAL": {
+      "main": [
+        [
+          {
+            "node": "DELETETION ACKNOLEDGEMENT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "APPLY MEAL REGEX": {
+      "main": [
+        [
+          {
+            "node": "DELETE MEAL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "APPLY MEAL ORGANISE REGEX": {
+      "main": [
+        [
+          {
+            "node": "SHOW USER'S DAY",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "e0168c50-0501-4667-b457-d2229b0b245c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "<YOUR_N8N_INSTANCE_ID>"
+  },
+  "id": "cOyUrcWsIyzMRTAa",
+  "tags": []
+}
