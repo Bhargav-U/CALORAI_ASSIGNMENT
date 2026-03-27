@@ -9,6 +9,11 @@ logging experience — all without a traditional backend server.
 > 📖 For detailed step-by-step setup instructions for every service, refer to:
 > **`N8N/WORKFLOW_SETUP_GUIDE.pdf`**
 
+## 📌 Project Links
+
+- 🎥 **YouTube Submission:** https://youtube.com/watch?v=fXQfEU5Tpoc  
+- 📄 **Setup Guide (PDF):** https://canva.com/design/DAHFGipITBI/zMlAltd5DIpdmNN9uYHjeA/edit?utm_content=DAHFGipITBI&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton
+
 ---
 
 ## 📁 Repository Structure
